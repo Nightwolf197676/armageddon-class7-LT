@@ -8,7 +8,7 @@ resource "aws_cloudfront_cache_policy" "bos_cache_static01" {
   comment     = "Aggressive caching for /static/*"
   default_ttl = 86400    # 1 day
   max_ttl     = 31536000 # 1 year
-  min_ttl     = 0
+  min_ttl     = 60       ### updated from 0 to 60
 
   parameters_in_cache_key_and_forwarded_to_origin {
     # Explanation: Static should not vary on cookies—Chewbacca refuses to cache 10,000 versions of a PNG.
@@ -61,12 +61,12 @@ resource "aws_cloudfront_cache_policy" "bos_cache_api_disabled01" {
   # }
 
   parameters_in_cache_key_and_forwarded_to_origin {
-    cookies_config { 
-      cookie_behavior = "none" 
-      }
-    query_strings_config { 
-      query_string_behavior = "none" 
-      }
+    cookies_config {
+      cookie_behavior = "none"
+    }
+    query_strings_config {
+      query_string_behavior = "none"
+    }
 
     # Explanation: Forward auth-related headers to origin, but DO NOT include random headers in cache key.
     # Students: choose only required headers (Authorization is the classic case).
@@ -95,7 +95,7 @@ resource "aws_cloudfront_origin_request_policy" "bos_orp_api01" {
   headers_config {
     header_behavior = "whitelist"
     headers {
-      items = ["Content-Type", "Origin", "Host"]   ###Removed Authorization
+      items = ["Content-Type", "Origin", "Host"] ###Removed Authorization
     }
   }
 }

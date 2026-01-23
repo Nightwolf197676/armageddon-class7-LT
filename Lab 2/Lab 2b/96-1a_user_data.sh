@@ -6,6 +6,12 @@ dnf install -y python3-pip
 dnf install -y mariadb105
 pip3 install flask pymysql boto3
 
+# Create project directories and static test file early
+mkdir -p /opt/rdsapp/static
+echo "This is a test static file for caching proof." > /opt/rdsapp/static/example.txt
+chmod 644 /opt/rdsapp/static/example.txt
+chown -R ec2-user:ec2-user /opt/rdsapp   # Make sure Flask can read/write logs/static
+
 mkdir -p /opt/rdsapp
 cat >/opt/rdsapp/app.py <<'PY'
 import json
@@ -13,7 +19,7 @@ import os
 import boto3
 import pymysql
 import logging
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 # Setup logging
 logging.basicConfig(
@@ -128,6 +134,31 @@ def list_notes():
     except Exception as e:
         logger.error(f"List notes failed: {str(e)}")
         return f"Cannot list notes: {str(e)}", 500
+
+# New JSON API endpoint for /api/list
+@app.route("/api/list")
+def api_list():
+    logger.info("API /api/list accessed")
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT id, note FROM notes ORDER BY id DESC;")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return jsonify([{"id": r[0], "note": r[1]} for r in rows])
+    except Exception as e:
+        logger.error(f"API list failed: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+# Prevent caching on dynamic/API routes
+@app.after_request
+def add_no_cache_headers(response):
+    if request.path.startswith('/api/') or request.path in ['/list', '/add']:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 if __name__ == "__main__":
     logger.info("Starting Flask app")

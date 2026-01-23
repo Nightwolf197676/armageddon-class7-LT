@@ -58,8 +58,9 @@ resource "aws_cloudfront_distribution" "bos_cf01" {
     allowed_methods = ["GET", "HEAD", "OPTIONS"]
     cached_methods  = ["GET", "HEAD"]
 
-    cache_policy_id            = aws_cloudfront_cache_policy.bos_cache_static01.id
-    origin_request_policy_id   = aws_cloudfront_origin_request_policy.bos_orp_static01.id
+    cache_policy_id          = aws_cloudfront_cache_policy.bos_cache_static01.id
+    # origin_request_policy_id = aws_cloudfront_origin_request_policy.bos_orp_static01.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.bos_orp_all_viewer01.id   # ← Now forwards Host header
     response_headers_policy_id = aws_cloudfront_response_headers_policy.bos_rsp_static01.id
   }
 
